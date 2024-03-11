@@ -1,0 +1,1 @@
+Le jeu est par defaut en mode jeu ou l'on peut controller le serpent avec les fleches directionnel. Start auto-animation le fera ce deplacer dans le canva tous seul et stop arretera l'animation. 
