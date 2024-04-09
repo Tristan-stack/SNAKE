@@ -3,6 +3,7 @@ let ctx = canvas.getContext('2d');
 let canvasWidth = canvas.width;
 let canvasHeight = canvas.height;
 let autoMove = false;
+let currentLevel = 1;
 
 class Anneau {
     constructor(i, j, color) {
@@ -43,6 +44,10 @@ class Anneau {
         // bouge le serpent
         this.i = nextI;
         this.j = nextJ;
+    } else if (currentLevel === 1 && (nextI < 0 || nextI >= terrain.largeur || nextJ < 0 || nextJ >= terrain.hauteur)) {
+        // If level is easy, allow the snake to cross the border
+        this.i = (nextI + terrain.largeur) % terrain.largeur;
+        this.j = (nextJ + terrain.hauteur) % terrain.hauteur;
     }
 
 }
@@ -57,33 +62,75 @@ class Serpent {
     constructor(longueur, i, j, direction) {
         this.anneaux = [];
         this.direction = direction;
+        this.score = 0;
 
-        let tete = new Anneau(i, j, 'red');
+        let tete = new Anneau(i, j, '#FF6600'); // Set head color to #FF6600
         this.anneaux.push(tete);
 
         for (let k = 1; k < longueur; k++) {
-            let anneau = new Anneau(i, j, 'blue');
+            let anneau = new Anneau(i, j, '#FFEA00'); // Set body color to #FFEA00
             this.anneaux.push(anneau);
         }
 
-        this.anneaux[this.anneaux.length - 1].color = 'green';
+        this.anneaux[this.anneaux.length - 1].color = '#FFEA00'; // Set tail color to #FFEA00
     }
 
     draw() {
         for (let i = 0; i < this.anneaux.length; i++) {
+            let size = 20 - (i * (15 / this.anneaux.length)); // Calculate size based on position
+            this.anneaux[i].size = size;
             this.anneaux[i].draw();
         }
     }
 
     move() {
-        
-        if (terrain.read(this.anneaux[0].j, this.anneaux[0].i) === 0) {            
+        let nextI = this.anneaux[0].i;
+        let nextJ = this.anneaux[0].j;
+    
+        switch (this.direction) {
+            case 1: // right
+                nextI++;
+                break;
+            case 3: // left
+                nextI--;
+                break;
+            case 0: // up
+                nextJ--;
+                break;
+            case 2: // down
+                nextJ++;
+                break;
+            default:
+                console.log("Invalid direction code");
+        }
+    
+        if (currentLevel === 3) { // If level is hard, check if the snake touches itself
+            for (let i = 1; i < this.anneaux.length; i++) {
+                if (this.anneaux[i].i === nextI && this.anneaux[i].j === nextJ) {
+                    stopRAF(); // Stop the animation
+                    return;
+                }
+            }
+        }
+    
+        if (nextI >= 0 && nextI < terrain.largeur  && nextJ >= 0 && nextJ < terrain.hauteur && terrain.read(nextJ, nextI) === 0) {             
             for (let i = this.anneaux.length - 1; i > 0; i--) {
                 this.anneaux[i].copy(this.anneaux[i - 1]);
             }
             this.anneaux[0].move(this.direction);
-        } else if (terrain.read(this.anneaux[0].j, this.anneaux[0].i) === 2 && 1) { // Si la tête est sur un mur
-            stopRAF(); // Arrête l'animation
+            // If the head is on an apple
+            if (this.anneaux[0].i === terrain.pomme.i && this.anneaux[0].j === terrain.pomme.j) {
+                this.extend();
+                terrain.addRockAndApple();
+            }
+        } else if (terrain.read(nextJ, nextI) !== 0) { // If the head is on a wall or a rock
+            if (currentLevel > 1) { // If level is intermediate or hard, stop the game
+                stopRAF(); // Stop the animation
+            }
+        } else if (currentLevel === 1 && (nextI < 0 || nextI >= terrain.largeur || nextJ < 0 || nextJ >= terrain.hauteur)) {
+            // If level is easy, allow the snake to cross the border
+            nextI = (nextI + terrain.largeur) % terrain.largeur;
+            nextJ = (nextJ + terrain.hauteur) % terrain.hauteur;
         }
     }
 
@@ -94,8 +141,24 @@ class Serpent {
 
     extend() {
         let last = this.anneaux[this.anneaux.length - 1];
-        let newLast = new Anneau(last.i, last.j, 'green');
+        let size = 20 - (this.anneaux.length * (15 / this.anneaux.length)); // Calculate size for new segment
+        let newLast = new Anneau(last.i, last.j, '#FFEA00', size); // Set new tail color to #FFEA00
+        this.score++;
+        document.getElementById('score').innerText = "Votre score : " + this.score;
         this.anneaux.push(newLast);
+    }
+}
+
+class Pomme {
+    constructor(i, j) {
+        this.i = i;
+        this.j = j;
+        this.color = 'red';
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.i * 20, this.j * 20, 20, 20);
     }
 }
 
@@ -120,32 +183,55 @@ class Terrain {
         }
 
         // ajout de rochers aleatoires
-        for (let i = 0; i < 15; i++) {
-            let x, y;
-            do {
-                x = Math.floor(Math.random() * this.largeur);
-                y = Math.floor(Math.random() * this.hauteur);
-            } while (this.sol[y][x] !== 0);
-            this.sol[y][x] = 1;
-        }
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * this.largeur);
+            y = Math.floor(Math.random() * this.hauteur);
+        } while (this.sol[y][x] !== 0);
+        this.sol[y][x] = 1;
+        // ajout d'une pomme aléatoire
+        this.addRockAndApple();
     }
 
+    addRockAndApple() {
+        // ajout d'un rocher aléatoire
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * this.largeur);
+            y = Math.floor(Math.random() * this.hauteur);
+        } while (this.sol[y][x] !== 0);
+        this.sol[y][x] = 1; // rocher
+        // ajout d'une pomme aléatoire
+        do {
+            x = Math.floor(Math.random() * this.largeur);
+            y = Math.floor(Math.random() * this.hauteur);
+        } while (this.sol[y][x] !== 0);
+        this.pomme = new Pomme(x, y); // pomme
+    }
     draw() {
         for (let i = 0; i < this.hauteur; i++) {
             for (let j = 0; j < this.largeur; j++) {
                 switch (this.sol[i][j]) {
                     case 0: // Empty cell
-                        ctx.fillStyle = 'white';
+                        if ((i + j) % 2 === 0) {
+                            ctx.fillStyle = '#347412';
+                        } else {
+                            ctx.fillStyle = '#2B6812';
+                        }
                         break;
                     case 1: // Rock
-                        ctx.fillStyle = 'gray';
+                        ctx.fillStyle = '#663908';
                         break;
                     case 2: // Border
-                        ctx.fillStyle = 'black';
+                        ctx.fillStyle = '#281501';
                         break;
                 }
                 ctx.fillRect(j * 20, i * 20, 20, 20);
             }
+        }
+        // Dessine la pomme
+        if (this.pomme) {
+            this.pomme.draw();
         }
     }
 
@@ -156,8 +242,6 @@ class Terrain {
     write(i, j, val) {
         this.sol[i][j] = val;
     }
-
-    
 }
 
 let serpent1 = new Serpent(5, 5, 5, 1);
@@ -179,13 +263,19 @@ function direction(currentDirection) {
 
 // par defaut, le serpent est en mode "jeu" avec les fleches directionnelles
 
-document.getElementById('start').addEventListener('click', function () {
-    autoMove = true;
-});
 
-document.getElementById('stop').addEventListener('click', function () {
-    autoMove = false;
-});
+
+let niveau = prompt("Veuillez choisir un niveau: 1, 2 ou 3");
+
+if (niveau == 1 || niveau == 2 || niveau == 3) {
+    currentLevel = parseInt(niveau); // Assign the user input to currentLevel
+    // Lancez le jeu ici
+} else {
+    alert("Veuillez choisir un niveau valide");
+}
+
+// Suppose que currentLevel est la variable qui contient le niveau actuel
+document.getElementById("level").textContent = "Niveau : " + currentLevel;
 
 window.addEventListener('keydown', function (event) {
     autoMove = false;
@@ -213,16 +303,6 @@ window.addEventListener('keydown', function (event) {
     }
 });
 
-// setInterval(function () {
-//     // il faut clere uniquement le dernier anneau du serpent et pas le rectangle entier
-//     ctx.clearRect(serpent1.anneaux[serpent1.anneaux.length - 1].i * 20, serpent1.anneaux[serpent1.anneaux.length - 1].j * 20, 20, 20);
-
-//     if (autoMove) {
-//         serpent1.direction = direction(serpent1.direction);
-//     }
-//     serpent1.move();
-//     serpent1.draw();
-// }, 200);
 
 // Identifiant du "timer"
 let animationTimer = 0;
@@ -247,6 +327,8 @@ function startRAF(timestamp = 0) {
 function stopRAF() {
     cancelAnimationFrame(animationTimer);
     animationTimer = 0;
+    alert("Perdu !");
+    location.reload();
 }
 
 let terrain = new Terrain(canvasWidth / 20, canvasHeight / 20);

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="app.css">
     <title>Document</title>
 </head>
 <body>
-
-    <button id="start">Start auto animation</button>
-    <button id="stop">Stop auto animation</button>
-    
-    <canvas id="terrain" width=400 height=400 style="border: 1px solid black;"></canvas>
+    <div class="game-screen">
+        <div class="info">
+            <p id="level">Niveau : 1</p>
+            <p id="score">Votre score : 0</p>
+        </div>
+        <canvas id="terrain" width=400 height=400 style="border: 1px solid black;"></canvas>
+    </div>
 
     <script src="script.js"></script>
 </body>
