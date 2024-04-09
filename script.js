@@ -17,35 +17,35 @@ class Anneau {
     }
 
     move(d) {
-        switch (d) {
-            case 1: // right
-                this.i++;
-                break;
-            case 3: // left
-                this.i--;
-                break;
-            case 0: // up
-                this.j--;
-                break;
-            case 2: // down
-                this.j++;
-                break;
-            default:
-                console.log("Invalid direction code");
-        }
+    // Calcule la prochaine position du serpent
+    let nextI = this.i;
+    let nextJ = this.j;
 
-        if (this.i < 0) {
-            this.i = canvasWidth / 20 - 1;
-        } else if (this.i >= canvasWidth / 20) {
-            this.i = 0;
-        }
-
-        if (this.j < 0) {
-            this.j = canvasHeight / 20 - 1;
-        } else if (this.j >= canvasHeight / 20) {
-            this.j = 0;
-        }
+    switch (d) {
+        case 1: // right
+            nextI++;
+            break;
+        case 3: // left
+            nextI--;
+            break;
+        case 0: // up
+            nextJ--;
+            break;
+        case 2: // down
+            nextJ++;
+            break;
+        default:
+            console.log("Invalid direction code");
     }
+
+    // regarde si le serpent est sorti du terrain ou s'il a touché un rocher
+    if (nextI >= 0 && nextI < terrain.largeur  && nextJ >= 0 && nextJ < terrain.hauteur && terrain.read(nextJ, nextI) === 0) {
+        // bouge le serpent
+        this.i = nextI;
+        this.j = nextJ;
+    }
+
+}
 
     copy(a) {
         this.i = a.i;
@@ -82,7 +82,14 @@ class Serpent {
                 this.anneaux[i].copy(this.anneaux[i - 1]);
             }
             this.anneaux[0].move(this.direction);
+        } else if (terrain.read(this.anneaux[0].j, this.anneaux[0].i) === 2 && 1) { // Si la tête est sur un mur
+            stopRAF(); // Arrête l'animation
         }
+    }
+
+    animate() {
+        this.move();
+        this.draw();
     }
 
     extend() {
@@ -206,17 +213,42 @@ window.addEventListener('keydown', function (event) {
     }
 });
 
-setInterval(function () {
-    // il faut clere uniquement le dernier anneau du serpent et pas le rectangle entier
-    ctx.clearRect(serpent1.anneaux[serpent1.anneaux.length - 1].i * 20, serpent1.anneaux[serpent1.anneaux.length - 1].j * 20, 20, 20);
+// setInterval(function () {
+//     // il faut clere uniquement le dernier anneau du serpent et pas le rectangle entier
+//     ctx.clearRect(serpent1.anneaux[serpent1.anneaux.length - 1].i * 20, serpent1.anneaux[serpent1.anneaux.length - 1].j * 20, 20, 20);
 
-    if (autoMove) {
-        serpent1.direction = direction(serpent1.direction);
+//     if (autoMove) {
+//         serpent1.direction = direction(serpent1.direction);
+//     }
+//     serpent1.move();
+//     serpent1.draw();
+// }, 200);
+
+// Identifiant du "timer"
+let animationTimer = 0;
+let starttime = 0;
+// Fréquence d'affichage maximum
+const maxfps = 60;
+const interval = 10000 / maxfps;
+
+// Fonction permettant de démarrer l'animation
+// Fonction permettant de démarrer l'animation
+function startRAF(timestamp = 0) {
+    animationTimer = requestAnimationFrame(startRAF);
+    if (starttime === 0) starttime = timestamp;
+    let delta = timestamp - starttime;
+    if (delta >= interval) {
+        terrain.draw(); // Dessine le terrain à chaque frame
+        serpent1.animate(); // Dessine le serpent à chaque frame
+        starttime = timestamp - (delta % interval);
     }
-    serpent1.move();
-    serpent1.draw();
-}, 200);
-
+}
+// Fonction permettant d'arrêter l'animation
+function stopRAF() {
+    cancelAnimationFrame(animationTimer);
+    animationTimer = 0;
+}
 
 let terrain = new Terrain(canvasWidth / 20, canvasHeight / 20);
 terrain.draw();
+startRAF();
