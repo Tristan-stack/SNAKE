@@ -45,7 +45,7 @@ class Anneau {
         this.i = nextI;
         this.j = nextJ;
     } else if (currentLevel === 1 && (nextI < 0 || nextI >= terrain.largeur || nextJ < 0 || nextJ >= terrain.hauteur)) {
-        // If level is easy, allow the snake to cross the border
+        //si le niveau est facile, le serpent peut traverser les bords
         this.i = (nextI + terrain.largeur) % terrain.largeur;
         this.j = (nextJ + terrain.hauteur) % terrain.hauteur;
     }
@@ -64,20 +64,20 @@ class Serpent {
         this.direction = direction;
         this.score = 0;
 
-        let tete = new Anneau(i, j, '#FF6600'); // Set head color to #FF6600
+        let tete = new Anneau(i, j, '#FF6600'); 
         this.anneaux.push(tete);
 
         for (let k = 1; k < longueur; k++) {
-            let anneau = new Anneau(i, j, '#FFEA00'); // Set body color to #FFEA00
+            let anneau = new Anneau(i, j, '#FFEA00'); 
             this.anneaux.push(anneau);
         }
 
-        this.anneaux[this.anneaux.length - 1].color = '#FFEA00'; // Set tail color to #FFEA00
+        this.anneaux[this.anneaux.length - 1].color = '#FFEA00'; 
     }
 
     draw() {
         for (let i = 0; i < this.anneaux.length; i++) {
-            let size = 20 - (i * (15 / this.anneaux.length)); // Calculate size based on position
+            let size = 20 - (i * (15 / this.anneaux.length)); 
             this.anneaux[i].size = size;
             this.anneaux[i].draw();
         }
@@ -104,10 +104,10 @@ class Serpent {
                 console.log("Invalid direction code");
         }
     
-        if (currentLevel === 3) { // If level is hard, check if the snake touches itself
+        if (currentLevel === 3) { //  si le niveau est difficile le serpent ne peut pas se mordre la queue
             for (let i = 1; i < this.anneaux.length; i++) {
                 if (this.anneaux[i].i === nextI && this.anneaux[i].j === nextJ) {
-                    stopRAF(); // Stop the animation
+                    stopRAF(); // Stop la boucle d'animation
                     return;
                 }
             }
@@ -118,17 +118,16 @@ class Serpent {
                 this.anneaux[i].copy(this.anneaux[i - 1]);
             }
             this.anneaux[0].move(this.direction);
-            // If the head is on an apple
+            // Si la tête du serpent est sur une pomme
             if (this.anneaux[0].i === terrain.pomme.i && this.anneaux[0].j === terrain.pomme.j) {
                 this.extend();
                 terrain.addRockAndApple();
             }
-        } else if (terrain.read(nextJ, nextI) !== 0) { // If the head is on a wall or a rock
-            if (currentLevel > 1) { // If level is intermediate or hard, stop the game
-                stopRAF(); // Stop the animation
+        } else if (terrain.read(nextJ, nextI) !== 0) { 
+            if (currentLevel > 1) { 
+                stopRAF(); 
             }
         } else if (currentLevel === 1 && (nextI < 0 || nextI >= terrain.largeur || nextJ < 0 || nextJ >= terrain.hauteur)) {
-            // If level is easy, allow the snake to cross the border
             nextI = (nextI + terrain.largeur) % terrain.largeur;
             nextJ = (nextJ + terrain.hauteur) % terrain.hauteur;
         }
@@ -141,8 +140,8 @@ class Serpent {
 
     extend() {
         let last = this.anneaux[this.anneaux.length - 1];
-        let size = 20 - (this.anneaux.length * (15 / this.anneaux.length)); // Calculate size for new segment
-        let newLast = new Anneau(last.i, last.j, '#FFEA00', size); // Set new tail color to #FFEA00
+        let size = 20 - (this.anneaux.length * (15 / this.anneaux.length));
+        let newLast = new Anneau(last.i, last.j, '#FFEA00', size); 
         this.score++;
         document.getElementById('score').innerText = "Votre score : " + this.score;
         this.anneaux.push(newLast);
@@ -212,14 +211,14 @@ class Terrain {
         for (let i = 0; i < this.hauteur; i++) {
             for (let j = 0; j < this.largeur; j++) {
                 switch (this.sol[i][j]) {
-                    case 0: // Empty cell
+                    case 0: // Cellule vide
                         if ((i + j) % 2 === 0) {
                             ctx.fillStyle = '#347412';
                         } else {
                             ctx.fillStyle = '#2B6812';
                         }
                         break;
-                    case 1: // Rock
+                    case 1: // rocher
                         ctx.fillStyle = '#663908';
                         break;
                     case 2: // Border
@@ -261,20 +260,15 @@ function direction(currentDirection) {
     }
 }
 
-// par defaut, le serpent est en mode "jeu" avec les fleches directionnelles
-
-
-
 let niveau = prompt("Veuillez choisir un niveau: 1, 2 ou 3");
 
 if (niveau == 1 || niveau == 2 || niveau == 3) {
-    currentLevel = parseInt(niveau); // Assign the user input to currentLevel
+    currentLevel = parseInt(niveau); // Met à jour le niveau actuel donné par l'utilisateur
     // Lancez le jeu ici
 } else {
     alert("Veuillez choisir un niveau valide");
 }
 
-// Suppose que currentLevel est la variable qui contient le niveau actuel
 document.getElementById("level").textContent = "Niveau : " + currentLevel;
 
 window.addEventListener('keydown', function (event) {
@@ -311,7 +305,6 @@ let starttime = 0;
 const maxfps = 60;
 const interval = 10000 / maxfps;
 
-// Fonction permettant de démarrer l'animation
 // Fonction permettant de démarrer l'animation
 function startRAF(timestamp = 0) {
     animationTimer = requestAnimationFrame(startRAF);
